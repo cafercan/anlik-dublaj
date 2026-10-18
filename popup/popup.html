@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anlık Dublaj</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-card">
+    <!-- Header -->
+    <header class="header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 8l6 6M19 14l-6-6M2 12h20M12 2v20"/>
+          </svg>
+        </div>
+        <div class="brand-title">
+          <h1>Anlık Dublaj</h1>
+          <span class="badge" id="model-badge">Gemini 3.5 Live Translate</span>
+        </div>
+      </div>
+      <a href="../options/options.html" target="_blank" class="icon-btn" title="Gelişmiş Ayarlar">
+        ⚙️
+      </a>
+    </header>
+
+    <!-- Master Switch -->
+    <div class="master-toggle-container">
+      <div class="toggle-info">
+        <span class="toggle-title">Canlı Çeviri Durumu</span>
+        <span class="toggle-desc" id="status-desc">Sekmedeki videoyu dinlemek için açın</span>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="master-toggle">
+        <span class="slider round"></span>
+      </label>
+    </div>
+
+    <!-- Alert / Notice Box (Shows if API key missing) -->
+    <div class="alert-box" id="api-alert" style="display: none;">
+      <span>⚠️ Gemini API Anahtarı girilmedi.</span>
+      <button class="alert-action-btn" id="go-to-settings-btn">Ayarlara Git</button>
+    </div>
+
+    <!-- Sound Controls -->
+    <div class="section">
+      <div class="section-title">
+        <span>Ses Kontrolleri</span>
+      </div>
+
+      <!-- Original Video Audio -->
+      <div class="control-row">
+        <div class="control-label">
+          <span>🎵 Orijinal Video Sesi</span>
+          <span class="val-display" id="orig-vol-val">15%</span>
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" id="orig-vol-slider" min="0" max="100" value="15">
+          <button class="mute-btn" id="mute-orig-btn" title="Orijinal Sesi Kapat/Aç">🔇</button>
+        </div>
+      </div>
+
+      <!-- Translated Voice Audio -->
+      <div class="control-row">
+        <div class="control-label">
+          <span>🗣️ Türkçe Çeviri Sesi</span>
+          <span class="val-display" id="trans-vol-val">100%</span>
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" id="trans-vol-slider" min="0" max="100" value="100">
+        </div>
+      </div>
+
+      <!-- Speech Speed (Live Translate kendi sesini üretir) -->
+      <div class="control-row" style="display:none">
+        <div class="control-label">
+          <span>⚡ Konuşma Hızı</span>
+          <span class="val-display" id="speed-val">1.1x</span>
+        </div>
+        <div class="slider-wrapper">
+          <input type="range" id="speed-slider" min="0.8" max="1.8" step="0.1" value="1.1">
+        </div>
+      </div>
+
+      <!-- Voice Selector (Live Translate kendi sesini üretir) -->
+      <div class="control-row" style="display:none">
+        <div class="control-label">
+          <span>🎙️ Türkçe Ses</span>
+        </div>
+        <select id="voice-select" class="custom-select">
+          <option value="">Otomatik (En Doğal Türkçe Ses)</option>
+        </select>
+      </div>
+
+      <!-- Show Subtitle on Video -->
+      <div class="checkbox-row">
+        <label>
+          <input type="checkbox" id="show-overlay-checkbox" checked>
+          <span>Video üzerinde Türkçe altyazı kutusu göster</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- API Key Collapsible Card -->
+    <div class="section collapsible">
+      <div class="section-header-click" id="api-section-header">
+        <div class="section-title">
+          <span>🔑 Google AI Studio API Anahtarı</span>
+        </div>
+        <span class="chevron" id="api-chevron">▼</span>
+      </div>
+
+      <div class="collapsible-content" id="api-content">
+        <div class="input-group">
+          <label for="api-key-input">Gemini API Key</label>
+          <div class="input-with-button">
+            <input type="password" id="api-key-input" placeholder="AIzaSy..." autocomplete="off">
+            <button type="button" class="icon-toggle-btn" id="toggle-key-visibility">👁️</button>
+          </div>
+          <p class="field-hint">
+            API anahtarınız yok mu?
+            <a href="https://aistudio.google.com/api-keys" target="_blank" class="link">
+              Google AI Studio'dan Ücretsiz Alın ↗
+            </a>
+          </p>
+        </div>
+
+        <div class="input-group">
+          <label for="model-select">Çeviri Modeli</label>
+          <select id="model-select" class="custom-select" disabled>
+            <option value="gemini-3.5-live-translate-preview" selected>Gemini 3.5 Live Translate (Preview)</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button class="primary-btn" id="save-key-btn">Kaydet & Doğrula</button>
+        </div>
+        <div class="key-status-message" id="key-status-msg"></div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <span>Anlık Dublaj v1.1.0</span>
+      <span class="active-dot" id="footer-dot"></span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
