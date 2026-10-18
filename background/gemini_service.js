@@ -15,7 +15,9 @@ export async function validateApiKey(apiKey) {
   }
 
   try {
-    const res = await fetch(`${API_BASE}/${LIVE_TRANSLATE_MODEL}?key=${encodeURIComponent(apiKey.trim())}`);
+    const res = await fetch(
+      `${API_BASE}/${LIVE_TRANSLATE_MODEL}?key=${encodeURIComponent(apiKey.trim())}`
+    );
     if (res.ok) {
       const model = await res.json();
       return {
@@ -26,7 +28,10 @@ export async function validateApiKey(apiKey) {
     }
     const err = await res.json().catch(() => ({}));
     if (res.status === 404) {
-      return { valid: false, message: `Bu anahtar '${LIVE_TRANSLATE_MODEL}' modeline erişemiyor (bölge/önizleme erişimi gerekebilir).` };
+      return {
+        valid: false,
+        message: `Bu anahtar '${LIVE_TRANSLATE_MODEL}' modeline erişemiyor (bölge/önizleme erişimi gerekebilir).`
+      };
     }
     return { valid: false, message: err?.error?.message || `HTTP ${res.status}` };
   } catch (error) {

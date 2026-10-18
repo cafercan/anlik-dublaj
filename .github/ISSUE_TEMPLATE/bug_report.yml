@@ -1,0 +1,36 @@
+name: Hata bildirimi
+description: Eklentide bir şey beklendiği gibi çalışmıyor
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: Ne oldu?
+      description: Ne yaptığını, ne beklediğini ve ne olduğunu anlat.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Tekrar oluşturma adımları
+      placeholder: |
+        1. Şu videoyu aç: ...
+        2. Çeviriyi aç
+        3. ...
+  - type: textarea
+    id: error
+    attributes:
+      label: Hata mesajı
+      description: Video üzerindeki kutuda veya popup'ta görünen mesaj. Lütfen API anahtarını paylaşma.
+  - type: input
+    id: version
+    attributes:
+      label: Eklenti sürümü
+      description: Popup'ın sol üstünde yazar (ör. v1.2.0)
+    validations:
+      required: true
+  - type: input
+    id: chrome
+    attributes:
+      label: Chrome sürümü ve işletim sistemi
+      placeholder: Chrome 141, Windows 11

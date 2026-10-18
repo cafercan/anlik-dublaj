@@ -19,7 +19,9 @@
   color: #ffffff;
   pointer-events: auto;
   user-select: none;
-  transition: opacity 0.25s ease, transform 0.2s ease;
+  transition:
+    opacity 0.25s ease,
+    transform 0.2s ease;
 }
 
 #gemini-translate-overlay.hidden {

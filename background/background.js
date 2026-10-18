@@ -1,15 +1,15 @@
 /**
- * Gemini Live Translate - Background Service Worker
+ * Anlık Dublaj - Background Service Worker
  * Owns the offscreen document that captures tab audio and streams it to
  * Gemini 3.5 Live Translate, and relays transcripts to the tab's overlay.
  */
-import { validateApiKey } from './gemini_service.js';
+import { validateApiKey } from "./gemini_service.js";
 
 const DEFAULT_SETTINGS = {
   apiKey: "",
   isEnabled: false,
-  originalVolume: 15,       // Original tab audio level while translating
-  translatedVolume: 100,    // Gemini's Turkish voice level
+  originalVolume: 15, // Original tab audio level while translating
+  translatedVolume: 100, // Gemini's Turkish voice level
   showOverlay: true,
   targetLang: "tr"
 };
@@ -17,8 +17,9 @@ const DEFAULT_SETTINGS = {
 // Only one tab can be captured at a time. Mirrored to storage.session because
 // the service worker is killed when idle while the offscreen capture keeps running.
 let activeTabId = null;
-const activeTabReady = chrome.storage.session.get({ activeTabId: null })
-  .then((s) => { activeTabId = s.activeTabId; });
+const activeTabReady = chrome.storage.session.get({ activeTabId: null }).then((s) => {
+  activeTabId = s.activeTabId;
+});
 
 function setActiveTab(tabId) {
   activeTabId = tabId;
@@ -36,7 +37,13 @@ async function saveSettings(newSettings) {
 
 chrome.runtime.onInstalled.addListener(async () => {
   // Drop keys left over from the old text-based implementation
-  await chrome.storage.sync.remove(["activeTabs", "model", "speechRate", "speechPitch", "selectedVoice"]);
+  await chrome.storage.sync.remove([
+    "activeTabs",
+    "model",
+    "speechRate",
+    "speechPitch",
+    "selectedVoice"
+  ]);
   await saveSettings(await loadSettings());
   updateBadge(false);
 });
@@ -94,7 +101,12 @@ async function startTranslation(tabId, streamId) {
     settings
   });
   updateBadge(true);
-  sendToTab(tabId, { action: "SET_ACTIVE_STATE", isActive: true, settings: publicSettings(settings) });
+  chrome.action.setTitle({ title: "Anlık Dublaj" });
+  sendToTab(tabId, {
+    action: "SET_ACTIVE_STATE",
+    isActive: true,
+    settings: publicSettings(settings)
+  });
 }
 
 async function stopTranslation() {
@@ -108,6 +120,26 @@ async function stopTranslation() {
 chrome.tabs.onRemoved.addListener(async (tabId) => {
   await activeTabReady;
   if (tabId === activeTabId) stopTranslation();
+});
+
+// Keyboard shortcut: the command itself is the user gesture that tabCapture needs
+chrome.commands.onCommand.addListener(async (command, tab) => {
+  if (command !== "toggle-translation" || !tab?.id) return;
+  await activeTabReady;
+  try {
+    if (tab.id === activeTabId) {
+      await stopTranslation();
+    } else {
+      const streamId = await chrome.tabCapture.getMediaStreamId({ targetTabId: tab.id });
+      await startTranslation(tab.id, streamId);
+    }
+  } catch (err) {
+    console.error("Kısayol ile çeviri başlatılamadı:", err);
+    await stopTranslation();
+    chrome.action.setBadgeText({ text: "!" });
+    chrome.action.setBadgeBackgroundColor({ color: "#ef4444" });
+    chrome.action.setTitle({ title: `Anlık Dublaj: ${err.message}` });
+  }
 });
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -145,7 +177,9 @@ function handleMessage(message, sender, sendResponse) {
       const changes = sender.tab ? pick(message.settings, TAB_WRITABLE_KEYS) : message.settings;
       await saveSettings(changes);
       // Live volume changes go straight to the audio graph
-      chrome.runtime.sendMessage({ target: "offscreen", action: "UPDATE_SETTINGS", settings: changes }).catch(() => {});
+      chrome.runtime
+        .sendMessage({ target: "offscreen", action: "UPDATE_SETTINGS", settings: changes })
+        .catch(() => {});
       sendToTab(activeTabId, { action: "SETTINGS_UPDATED", settings: publicSettings(changes) });
       sendResponse({ success: true });
     })();

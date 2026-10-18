@@ -9,7 +9,7 @@ class PcmDownsampler extends AudioWorkletProcessor {
   constructor() {
     super();
     this.ratio = sampleRate / TARGET_RATE;
-    this.pos = 0;                 // fractional read position into incoming stream
+    this.pos = 0; // fractional read position into incoming stream
     this.out = new Int16Array(CHUNK_SAMPLES);
     this.outIdx = 0;
     this.acc = 0;
@@ -47,4 +47,8 @@ class PcmDownsampler extends AudioWorkletProcessor {
   }
 }
 
-registerProcessor("pcm-downsampler", PcmDownsampler);
+if (typeof registerProcessor === "function") {
+  registerProcessor("pcm-downsampler", PcmDownsampler);
+} else if (typeof module !== "undefined") {
+  module.exports = { PcmDownsampler, TARGET_RATE, CHUNK_SAMPLES };
+}

@@ -1,9 +1,12 @@
 /**
- * Gemini Live Translate - Offscreen audio pipeline
- * tab audio -> 16 kHz PCM -> Gemini Live WebSocket -> 24 kHz Turkish PCM -> speakers
+ * Anlık Dublaj - Offscreen audio pipeline
+ * tab audio -> 16 kHz PCM -> Gemini Live WebSocket -> 24 kHz translated PCM -> speakers
  */
+const { bytesToBase64, base64PcmToFloat32, SilenceGate } = self.AudioUtils;
+
 const MODEL = "models/gemini-3.5-live-translate-preview";
-const WS_URL = "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
+const WS_URL =
+  "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent";
 const OUTPUT_RATE = 24000;
 const MAX_RECONNECTS = 5;
 
@@ -18,30 +21,20 @@ let ws = null;
 let wsReady = false;
 let running = false;
 let reconnects = 0;
+const gate = new SilenceGate();
 
 function emit(action, payload = {}) {
   chrome.runtime.sendMessage({ source: "offscreen", action, ...payload }).catch(() => {});
 }
 
-function toBase64(buffer) {
-  const bytes = new Uint8Array(buffer);
-  let bin = "";
-  for (let i = 0; i < bytes.length; i += 0x8000) {
-    bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-  }
-  return btoa(bin);
+function wsSend(message) {
+  if (wsReady && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
 }
 
-function playPcm24k(base64) {
-  const bin = atob(base64);
-  const samples = new Int16Array(bin.length >> 1);
-  for (let i = 0; i < samples.length; i++) {
-    const v = bin.charCodeAt(2 * i) | (bin.charCodeAt(2 * i + 1) << 8);
-    samples[i] = v;
-  }
+function playTranslatedChunk(base64) {
+  const samples = base64PcmToFloat32(base64);
   const buffer = playbackCtx.createBuffer(1, samples.length, OUTPUT_RATE);
-  const ch = buffer.getChannelData(0);
-  for (let i = 0; i < samples.length; i++) ch[i] = samples[i] / 0x8000;
+  buffer.copyToChannel(samples, 0);
 
   const src = playbackCtx.createBufferSource();
   src.buffer = buffer;
@@ -53,32 +46,49 @@ function playPcm24k(base64) {
   nextPlayTime += buffer.duration;
 }
 
+function onCapturedChunk(buffer) {
+  const { send, streamEnded } = gate.push(new Int16Array(buffer));
+  for (const chunk of send) {
+    wsSend({
+      realtimeInput: { audio: { data: bytesToBase64(chunk), mimeType: "audio/pcm;rate=16000" } }
+    });
+  }
+  // Lets the model flush its last translation instead of waiting for more audio
+  if (streamEnded) wsSend({ realtimeInput: { audioStreamEnd: true } });
+}
+
 function connectSocket() {
   wsReady = false;
   ws = new WebSocket(`${WS_URL}?key=${encodeURIComponent(settings.apiKey.trim())}`);
 
   ws.onopen = () => {
-    ws.send(JSON.stringify({
-      setup: {
-        model: MODEL,
-        // Transcription options live on setup itself, not inside generationConfig
-        inputAudioTranscription: {},
-        outputAudioTranscription: {},
-        generationConfig: {
-          responseModalities: ["AUDIO"],
-          translationConfig: {
-            targetLanguageCode: settings.targetLang || "tr",
-            echoTargetLanguage: false
+    ws.send(
+      JSON.stringify({
+        setup: {
+          model: MODEL,
+          // Transcription options live on setup itself, not inside generationConfig
+          inputAudioTranscription: {},
+          outputAudioTranscription: {},
+          generationConfig: {
+            responseModalities: ["AUDIO"],
+            translationConfig: {
+              targetLanguageCode: settings.targetLang || "tr",
+              echoTargetLanguage: false
+            }
           }
         }
-      }
-    }));
+      })
+    );
   };
 
   ws.onmessage = async (event) => {
     const raw = typeof event.data === "string" ? event.data : await event.data.text();
     let data;
-    try { data = JSON.parse(raw); } catch (_) { return; }
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return;
+    }
 
     if (data.setupComplete) {
       wsReady = true;
@@ -90,7 +100,7 @@ function connectSocket() {
     const sc = data.serverContent;
     if (sc) {
       for (const part of sc.modelTurn?.parts || []) {
-        if (part.inlineData?.data) playPcm24k(part.inlineData.data);
+        if (part.inlineData?.data) playTranslatedChunk(part.inlineData.data);
       }
       if (sc.inputTranscription?.text) {
         emit("TRANSCRIPT", { kind: "input", text: sc.inputTranscription.text });
@@ -114,7 +124,10 @@ function connectSocket() {
     }
     // Setup errors (bad key, unknown model, ...) arrive as close reasons
     if (event.code !== 1000) {
-      emit("STATUS", { status: "error", text: `Bağlantı koptu (${event.reason || event.code}), yeniden bağlanılıyor...` });
+      emit("STATUS", {
+        status: "error",
+        text: `Bağlantı koptu (${event.reason || event.code}), yeniden bağlanılıyor...`
+      });
     }
     setTimeout(() => running && connectSocket(), 1000 * reconnects);
   };
@@ -138,13 +151,7 @@ async function startCapture(streamId, initialSettings) {
 
   await captureCtx.audioWorklet.addModule("pcm-worklet.js");
   const worklet = new AudioWorkletNode(captureCtx, "pcm-downsampler");
-  worklet.port.onmessage = (e) => {
-    if (wsReady && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        realtimeInput: { audio: { data: toBase64(e.data), mimeType: "audio/pcm;rate=16000" } }
-      }));
-    }
-  };
+  worklet.port.onmessage = (e) => onCapturedChunk(e.data);
   source.connect(worklet);
 
   playbackCtx = new AudioContext({ sampleRate: OUTPUT_RATE });

@@ -3,7 +3,7 @@
  * Shows the overlay and live transcripts streamed from the offscreen pipeline.
  * Audio capture, translation and playback all happen in the offscreen document.
  */
-(function() {
+(function () {
   let isActive = false;
   let showOverlay = true;
   let inputLine = "";
@@ -17,7 +17,8 @@
     const overlay = window.GeminiOverlay;
     overlay.onOriginalVolumeChange = (vol) => sendSettings({ originalVolume: vol });
     overlay.onTranslatedVolumeChange = (vol) => sendSettings({ translatedVolume: vol });
-    overlay.onClose = () => chrome.runtime.sendMessage({ action: "SET_TAB_ACTIVE", isActive: false });
+    overlay.onClose = () =>
+      chrome.runtime.sendMessage({ action: "SET_TAB_ACTIVE", isActive: false });
   }
 
   function activate(settings) {
@@ -80,7 +81,10 @@
           showOverlay = message.settings.showOverlay;
           if (isActive) showOverlay ? activate(message.settings) : window.GeminiOverlay.hide();
         }
-        window.GeminiOverlay.setVolumes(message.settings.originalVolume, message.settings.translatedVolume);
+        window.GeminiOverlay.setVolumes(
+          message.settings.originalVolume,
+          message.settings.translatedVolume
+        );
         break;
     }
     return false;

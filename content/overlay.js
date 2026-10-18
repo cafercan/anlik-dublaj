@@ -19,10 +19,12 @@ class VideoOverlay {
    * Find suitable host container (YouTube movie player or video container)
    */
   findPlayerContainer() {
-    return document.getElementById("movie_player") || 
-           document.querySelector(".html5-video-player") || 
-           document.querySelector("video")?.parentElement || 
-           document.body;
+    return (
+      document.getElementById("movie_player") ||
+      document.querySelector(".html5-video-player") ||
+      document.querySelector("video")?.parentElement ||
+      document.body
+    );
   }
 
   /**
@@ -174,7 +176,8 @@ class VideoOverlay {
   /**
    * Update status indicator
    */
-  setStatus(status) { // 'idle', 'translating', 'speaking', 'error'
+  setStatus(status) {
+    // 'idle', 'translating', 'speaking', 'error'
     if (!this.statusDotEl) return;
     this.statusDotEl.className = "gto-status-dot";
     if (status) {

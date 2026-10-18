@@ -1,0 +1,21 @@
+{
+  "name": "anlik-dublaj",
+  "version": "1.2.0",
+  "private": true,
+  "description": "Tarayıcıdaki videoları Gemini Live Translate API ile gerçek zamanlı çeviren Chrome eklentisi",
+  "license": "MIT",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "node --test",
+    "check": "npm run lint && npm run format:check && npm test",
+    "package": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "eslint": "^9.14.0",
+    "globals": "^15.12.0",
+    "prettier": "^3.3.3"
+  }
+}
