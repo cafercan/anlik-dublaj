@@ -61,6 +61,19 @@ async function closeOffscreen() {
   }
 }
 
+// Content scripts run on arbitrary sites: never hand them the API key and only
+// let them change these keys.
+const TAB_WRITABLE_KEYS = ["originalVolume", "translatedVolume", "showOverlay"];
+
+function publicSettings(settings) {
+  const { apiKey, ...rest } = settings;
+  return rest;
+}
+
+function pick(obj, keys) {
+  return Object.fromEntries(Object.entries(obj || {}).filter(([k]) => keys.includes(k)));
+}
+
 function sendToTab(tabId, message) {
   if (tabId == null) return;
   chrome.tabs.sendMessage(tabId, message).catch(() => {});
@@ -81,7 +94,7 @@ async function startTranslation(tabId, streamId) {
     settings
   });
   updateBadge(true);
-  sendToTab(tabId, { action: "SET_ACTIVE_STATE", isActive: true, settings });
+  sendToTab(tabId, { action: "SET_ACTIVE_STATE", isActive: true, settings: publicSettings(settings) });
 }
 
 async function stopTranslation() {
@@ -121,17 +134,19 @@ function handleMessage(message, sender, sendResponse) {
   if (action === "GET_SETTINGS") {
     loadSettings().then((settings) => {
       const tabId = sender.tab ? sender.tab.id : message.tabId;
-      sendResponse({ ...settings, isTabActive: tabId != null && tabId === activeTabId });
+      const visible = sender.tab ? publicSettings(settings) : settings;
+      sendResponse({ ...visible, isTabActive: tabId != null && tabId === activeTabId });
     });
     return true;
   }
 
   if (action === "SAVE_SETTINGS") {
     (async () => {
-      await saveSettings(message.settings);
+      const changes = sender.tab ? pick(message.settings, TAB_WRITABLE_KEYS) : message.settings;
+      await saveSettings(changes);
       // Live volume changes go straight to the audio graph
-      chrome.runtime.sendMessage({ target: "offscreen", action: "UPDATE_SETTINGS", settings: message.settings }).catch(() => {});
-      sendToTab(activeTabId, { action: "SETTINGS_UPDATED", settings: message.settings });
+      chrome.runtime.sendMessage({ target: "offscreen", action: "UPDATE_SETTINGS", settings: changes }).catch(() => {});
+      sendToTab(activeTabId, { action: "SETTINGS_UPDATED", settings: publicSettings(changes) });
       sendResponse({ success: true });
     })();
     return true;
@@ -140,7 +155,13 @@ function handleMessage(message, sender, sendResponse) {
   if (action === "SET_TAB_ACTIVE") {
     (async () => {
       try {
-        const tabId = message.tabId ?? sender.tab?.id;
+        // A tab may only switch itself off; starting needs the popup's tabCapture grant
+        if (sender.tab && message.isActive) throw new Error("Sekmeden başlatma yapılamaz.");
+        const tabId = sender.tab ? sender.tab.id : message.tabId;
+        if (sender.tab && tabId !== activeTabId) {
+          sendResponse({ success: true });
+          return;
+        }
         if (message.isActive) {
           await startTranslation(tabId, message.streamId);
         } else {

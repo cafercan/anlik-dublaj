@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Anlık Dublaj",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Sekmedeki videoların sesini Gemini Live Translate API ile gerçek zamanlı Türkçe'ye çevirir ve seslendirir.",
   "icons": {
     "16": "icons/icon16.png",
