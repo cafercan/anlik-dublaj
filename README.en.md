@@ -53,10 +53,19 @@ _Anlık Dublaj_ is Turkish for "instant dubbing". This Chrome extension streams 
 ## Good to Know
 
 - Uses the `gemini-3.5-live-translate-preview` model, which is in preview. Usage counts against your own API key's quota and billing.
-- Your API key is stored only in your browser (`chrome.storage.sync`). It is sent only to Google's API and never shared with the sites you visit.
+- Your API key is stored in Chrome's synced settings area (`chrome.storage.sync`): if Chrome Sync is on, it also travels to your other devices signed in to your Google account. It is sent only to Google's API and never shared with the sites you visit.
 - One tab can be translated at a time.
 - Changing the target language takes effect the next time translation is turned on.
 - Quality may drop with loud background music or many overlapping speakers.
+
+## Privacy
+
+- **What is sent:** while translation is on, only that tab's **audio** is sent to Google's Gemini API. No video, page content, cookies or browsing history.
+- **Where:** audio goes straight to Google (`generativelanguage.googleapis.com`) with your own API key. There is no server in between; the developer receives no data.
+- **Heads-up:** whatever plays in the tab is sent. If you play a meeting, a video call or a private recording in that tab while translation is on, its audio goes to Google too.
+- **Google's use:** audio sent is covered by the [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms). On the free tier Google may use content to improve its products; paid-tier terms differ. Check the current terms.
+- **Stored:** the extension does not save transcripts or audio. Only your settings (API key, target language, volume levels) are kept in Chrome's settings storage and are removed when you uninstall.
+- **Why it runs on every site:** it can't know in advance where you'll watch a video, so it asks to place its subtitle overlay on any page. That script does not read page text; it only adds subtitles and audio controls on top of the video player.
 
 ## Development
 

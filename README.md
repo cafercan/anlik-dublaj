@@ -57,10 +57,19 @@ Kısayolu değiştirmek için `chrome://extensions/shortcuts` adresini kullanabi
 ## Bilinmesi Gerekenler
 
 - Eklenti `gemini-3.5-live-translate-preview` modelini kullanır. Model önizleme aşamasındadır. Kullanım, kendi API anahtarının kota ve ücretlendirmesine tabidir.
-- API anahtarın yalnızca tarayıcında (`chrome.storage.sync`) saklanır. Sadece Google'ın API'sine gönderilir, ziyaret ettiğin sitelerle paylaşılmaz.
+- API anahtarın Chrome'un eşitlenen ayar alanında (`chrome.storage.sync`) saklanır: Chrome eşitlemesi açıksa Google hesabınla giriş yaptığın diğer cihazlara da taşınır. Sadece Google'ın API'sine gönderilir, ziyaret ettiğin sitelerle paylaşılmaz.
 - Aynı anda tek bir sekme çevrilebilir.
 - Hedef dil değişikliği, çeviri kapatılıp yeniden açıldığında geçerli olur.
 - Yoğun arka plan müziği veya çok konuşmacılı sahnelerde çeviri kalitesi düşebilir.
+
+## Gizlilik
+
+- **Ne gönderilir:** Çeviri açıkken yalnızca o sekmenin **sesi** Google'ın Gemini API'sine gönderilir. Görüntü, sayfa içeriği, çerezler ya da tarama geçmişi gönderilmez.
+- **Nereye:** Ses, kendi API anahtarınla doğrudan Google'ın sunucusuna (`generativelanguage.googleapis.com`) gider. Arada başka bir sunucu yoktur; eklentinin geliştiricisi hiçbir veri almaz.
+- **Dikkat:** Sekmede ne çalıyorsa o gönderilir. Çeviri açıkken o sekmede bir toplantı, görüntülü görüşme ya da özel bir kayıt oynatırsan onun sesi de Google'a gider.
+- **Google'ın kullanımı:** Gönderilen ses [Gemini API Ek Hizmet Şartları](https://ai.google.dev/gemini-api/terms)'na tabidir. Ücretsiz katmanda Google içeriği ürünlerini geliştirmek için kullanabilir; ücretli katmanda bu koşullar farklıdır. Güncel şartları kontrol et.
+- **Saklanan:** Eklenti çeviri metnini ya da sesi kaydetmez. Yalnızca ayarların (API anahtarı, hedef dil, ses düzeyleri) Chrome'un ayar alanında tutulur; eklentiyi kaldırınca silinir.
+- **Neden tüm sitelerde çalışıyor:** Eklenti, hangi sitede video izlediğini önceden bilemediği için her sayfaya altyazı katmanını yerleştirebilecek izni ister. Bu betik sayfanın metnini okumaz, yalnızca video oynatıcısının üstüne altyazı ve ses düğmelerini ekler.
 
 ## Nasıl Çalışır?
 
